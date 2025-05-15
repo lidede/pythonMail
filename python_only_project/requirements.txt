@@ -1,0 +1,4 @@
+flask==2.3.3
+pydantic==2.5.2
+aiosmtpd==1.4.4
+python-dotenv==1.0.0
