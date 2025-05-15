@@ -18,13 +18,16 @@ class ParsedEmail:
         self.attachments: List[Dict[str, Any]] = []
 
 
-def parse_email(email_data: str) -> ParsedEmail:
+def parse_email(email_data) -> ParsedEmail:
     """Parse an email message and extract key information."""
     parsed = ParsedEmail()
     
     try:
-        # Parse the email message
-        msg = email.message_from_string(email_data, policy=default)
+        # Parse the email message depending on the type of input
+        if isinstance(email_data, bytes):
+            msg = email.message_from_bytes(email_data, policy=default)
+        else:
+            msg = email.message_from_string(str(email_data), policy=default)
         
         # Extract headers
         parsed.headers = dict(msg.items())
@@ -66,25 +69,28 @@ def _parse_address(address: str) -> Tuple[str, str]:
     return name, email_addr
 
 
-def _extract_content(msg: StandardEmailMessage, parsed: ParsedEmail) -> None:
+def _extract_content(msg, parsed: ParsedEmail) -> None:
     """Extract text and HTML content from the email."""
     # Check if the message is multipart
     if msg.is_multipart():
-        for part in msg.iter_parts():
+        for part in msg.walk():
             content_type = part.get_content_type()
             if content_type == 'text/plain':
-                parsed.text = part.get_content()
+                parsed.text = part.get_payload(decode=True).decode('utf-8', errors='replace')
             elif content_type == 'text/html':
-                parsed.html = part.get_content()
+                parsed.html = part.get_payload(decode=True).decode('utf-8', errors='replace')
     else:
         # Not multipart, just get the content
         content_type = msg.get_content_type()
-        if content_type == 'text/plain':
-            parsed.text = msg.get_content()
-        elif content_type == 'text/html':
-            parsed.html = msg.get_content()
-        else:
-            parsed.text = str(msg.get_content())
+        payload = msg.get_payload(decode=True)
+        if payload is not None:
+            content = payload.decode('utf-8', errors='replace')
+            if content_type == 'text/plain':
+                parsed.text = content
+            elif content_type == 'text/html':
+                parsed.html = content
+            else:
+                parsed.text = content
 
 
 def extract_magic_links(content: str) -> List[str]:

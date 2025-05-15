@@ -15,7 +15,11 @@ class SMTPHandler:
         """Handle incoming email data."""
         try:
             recipient = envelope.rcpt_tos[0]
-            email_data = envelope.content.decode('utf-8', errors='replace')
+            # Handle both string and bytes content
+            if isinstance(envelope.content, bytes):
+                email_data = envelope.content.decode('utf-8', errors='replace')
+            else:
+                email_data = envelope.content
             
             logger.info(f"Received email for: {recipient}")
             

@@ -20,7 +20,7 @@ def init_routes(app):
             result = []
             
             for account in accounts:
-                account_dict = account.dict()
+                account_dict = account.model_dump()
                 account_dict["unread_count"] = storage.get_unread_count(account.id)
                 # Don't send the password back to the client
                 account_dict.pop("password", None)
@@ -39,7 +39,7 @@ def init_routes(app):
             if not account:
                 return jsonify({"error": "Account not found"}), 404
                 
-            account_dict = account.dict()
+            account_dict = account.model_dump()
             account_dict["unread_count"] = storage.get_unread_count(account.id)
             # Don't send the password back to the client
             account_dict.pop("password", None)
@@ -63,14 +63,15 @@ def init_routes(app):
             if existing_account:
                 return jsonify({"error": "Email address already exists"}), 409
                 
-            account = storage.create_email_account({
+            account_data = {
                 "username": create_request.username,
                 "domain": create_request.domain,
                 "email": email,
                 "password": create_request.password
-            })
+            }
+            account = storage.create_email_account(account_data)
             
-            account_dict = account.dict()
+            account_dict = account.model_dump()
             account_dict["unread_count"] = 0
             # Don't send the password back to the client
             account_dict.pop("password", None)
@@ -91,7 +92,7 @@ def init_routes(app):
                 return jsonify({"error": "Account not found"}), 404
                 
             emails = storage.get_email_messages(account_id)
-            return jsonify([email.dict() for email in emails])
+            return jsonify([email.model_dump() for email in emails])
         except Exception as e:
             logger.error(f"Error fetching emails for account {account_id}: {e}")
             return jsonify({"error": "Failed to fetch emails"}), 500
@@ -112,12 +113,11 @@ def init_routes(app):
             magic_links = extract_magic_links(content_to_check)
             
             # Create EmailMessageWithMagicLinks
-            result = EmailMessageWithMagicLinks(
-                **email.dict(),
-                magic_links=magic_links
-            )
+            email_dict = email.model_dump()
+            email_dict["magic_links"] = magic_links
+            result = EmailMessageWithMagicLinks(**email_dict)
             
-            return jsonify(result.dict())
+            return jsonify(result.model_dump())
         except Exception as e:
             logger.error(f"Error fetching email {email_id}: {e}")
             return jsonify({"error": "Failed to fetch email"}), 500
@@ -135,9 +135,10 @@ def init_routes(app):
                 return jsonify({"error": "Account not found"}), 404
                 
             # Create the email message
-            message = storage.create_email_message(create_request.dict())
+            message_data = create_request.model_dump()
+            message = storage.create_email_message(message_data)
             
-            return jsonify(message.dict()), 201
+            return jsonify(message.model_dump()), 201
         except ValidationError as e:
             return jsonify({"error": "Validation error", "details": str(e)}), 400
         except Exception as e:

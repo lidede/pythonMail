@@ -27,7 +27,7 @@ def create_app():
 
 def start_smtp_server():
     """Start the SMTP server."""
-    smtp_port = int(os.getenv('SMTP_PORT', '25'))
+    smtp_port = int(os.getenv('SMTP_PORT', '2525'))  # Use port 2525 instead of 25
     smtp_host = os.getenv('SMTP_HOST', '0.0.0.0')
     
     smtp_server = SMTPServer(host=smtp_host, port=smtp_port)
@@ -44,7 +44,7 @@ def main():
     smtp_server = start_smtp_server()
     
     # Get port from environment or use default
-    port = int(os.getenv('PORT', '5000'))
+    port = int(os.getenv('PORT', '8000'))  # Use port 8000 which is less likely to be in use
     
     # Run the Flask app
     app.run(host='0.0.0.0', port=port)
